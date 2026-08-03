@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL (Your Data Warehouse)
+  postgres:
+    image: postgres:15
+    container_name: local_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: data_warehouse
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # 2. MinIO (Your Local AWS S3 Bucket)
+  minio:
+    image: quay.io/minio/minio
+    container_name: local_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    ports:
+      - "9000:9000" # API port for code to talk to
+      - "9001:9001" # Console port for your browser
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  # 3. n8n (Your Workflow Automator)
+  n8n:
+    image: n8nio/n8n
+    container_name: local_n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+    volumes:
+      - n8n_data:/home/node/.n8n
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  minio_data:
+  n8n_data:
